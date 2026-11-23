@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frame Selector</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel2: #1e222b; --line: #2b303b; --text: #e8eaf0;
+    --muted: #9aa1b0; --accent: #ffd60a; --game: #4cc9f0; --cam: #c9ced8; --ok: #44d17a; --bad: #ff6b6b;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  a { color: var(--game); }
+  header { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid var(--line);
+    background: var(--panel); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  header .title { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+  header .spacer { flex: 1; }
+  .btn { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px;
+    cursor: pointer; white-space: nowrap; }
+  .btn:hover { border-color: #3d4452; }
+  .btn.primary { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 650; }
+  .btn.primary:disabled { opacity: .5; cursor: default; }
+  .btn.small { padding: 4px 9px; font-size: 13px; }
+  .btn.link { background: none; border: none; color: var(--game); padding: 4px 2px; }
+  main { padding: 16px 18px 40px; }
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px;
+    cursor: pointer; }
+  .card:hover { border-color: var(--accent); }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card .meta { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 99px; background: var(--panel2); border: 1px solid var(--line);
+    font-size: 12px; color: var(--muted); margin-right: 4px; }
+  .tag.on { color: #111; background: var(--accent); border-color: var(--accent); }
+  .shorts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; cursor: pointer;
+    max-width: 340px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip.active { border-color: var(--accent); background: #2a2610; }
+  .chip .own { color: var(--accent); font-size: 12px; margin-left: 6px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
+  @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+  .editor-wrap { position: relative; width: 100%; user-select: none; touch-action: none; }
+  #editor { width: 100%; display: block; border-radius: 6px; background: #000; cursor: crosshair; }
+  .timebar { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .timebar input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  .time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 120px; text-align: right; }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .side h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 16px 0 8px; }
+  .side h2:first-child { margin-top: 0; }
+  .phone { width: 270px; margin: 0 auto; border-radius: 22px; padding: 8px; background: #050608; border: 1px solid var(--line); }
+  #preview { width: 100%; display: block; border-radius: 14px; background: #000; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg button { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 6px; cursor: pointer;
+    text-align: left; }
+  .seg button b { display: block; font-size: 14px; }
+  .seg button span { display: block; font-size: 12px; color: var(--muted); line-height: 1.3; }
+  .seg button.active { border-color: var(--accent); background: #2a2610; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+  .row label { flex: 1; }
+  .row input[type=range] { flex: 1; accent-color: var(--accent); }
+  .check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; margin: 10px 0; }
+  .check input { margin-top: 3px; accent-color: var(--accent); width: 16px; height: 16px; }
+  .check small { display: block; color: var(--muted); }
+  select { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; max-width: 100%; }
+  .typebox { font-size: 13px; color: var(--muted); }
+  .banner { background: #2a2610; border: 1px solid #5a4d10; color: #f3e7a8; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin-bottom: 10px; }
+  .status { font-size: 13px; color: var(--muted); min-height: 20px; margin-top: 8px; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
+  pre.log { background: #0b0d11; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: 12px; max-height: 170px;
+    overflow: auto; white-space: pre-wrap; margin: 8px 0 0; color: #c8ccd6; }
+  video { width: 100%; border-radius: 10px; margin-top: 10px; background: #000; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--line);
+    padding: 9px 14px; border-radius: 8px; display: none; z-index: 10; }
+  .empty { color: var(--muted); padding: 30px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Frame Selector</h1>
+  <span class="title" id="hdrTitle"></span>
+  <span class="spacer"></span>
+  <button class="btn small" id="backBtn" hidden>All videos</button>
+</header>
+<main id="app"><div class="empty">Loading…</div></main>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const OW = 1080, OH = 1920;
+const $ = (s, r = document) => r.querySelector(s);
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+const even = v => Math.round(v / 2) * 2;
+const clone = o => JSON.parse(JSON.stringify(o));
+const fmt = t => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60;
+  return `${m}:${s.toFixed(1).padStart(4, "0")}`; };
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+let S = null;           // state from the server
+let W = null;           // working copy: {video_type, default, shorts}
+let target = "default"; // "default" or a short number as a string
+let t = 0;              // current time in the video (s)
+let img = new Image();
+let imgReady = false;
+let found = [];         // faces found at the current frame
+let drag = null;
+let dirty = false;
+let memo = {};          // last layout per target and mode, so switching modes back keeps boxes
+let showText = true;
+let pollTimer = null;
+
+function toast(msg) { const el = $("#toast"); el.textContent = msg; el.style.display = "block";
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.style.display = "none", 2600); }
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  const ct = r.headers.get("content-type") || "";
+  const body = ct.includes("json") ? await r.json() : null;
+  if (!r.ok) throw new Error((body && body.error) || `HTTP ${r.status}`);
+  return body;
+}
+
+// ------------------------------------------------------------ geometry (mirrors clipper/layouts.py)
+function FW() { return S.frame[0]; } function FH() { return S.frame[1]; }
+function panelHeights(split) { const f = even(OH * clamp(split, S.split_range[0], S.split_range[1])); return [f, OH - f]; }
+function aspects(l) {
+  if (l.mode === "split") { const [f, g] = panelHeights(l.split); return {face: OW / f, game: OW / g}; }
+  if (l.mode === "crop") return {box: OW / OH};
+  return {};
+}
+function withAspect(b, a) {
+  let [x, y, w, h] = b; const cx = x + w / 2, cy = y + h / 2;
+  w = Math.max(w, 32); h = w / a;
+  if (h > FH()) { h = FH(); w = h * a; }
+  if (w > FW()) { w = FW(); h = w / a; }
+  x = clamp(cx - w / 2, 0, FW() - w); y = clamp(cy - h / 2, 0, FH() - h);
+  return [even(x), even(y), even(w), even(h)];
+}
+function keysFor(l) {
+  if (l.mode === "split") return l.track ? ["game", "cam", "face"] : ["game", "face"];
+  if (l.mode === "crop") return ["box"];
+  return [];
+}
+const COLORS = {face: "#ffd60a", box: "#ffd60a", game: "#4cc9f0", cam: "#c9ced8"};
+const LABELS = {face: "WEBCAM / FACE → top", box: "9:16 CROP", game: "GAMEPLAY → bottom", cam: "face stays inside"};
+function margins(l) {   // [subtitle text bottom y, headline top y] in output pixels
+  if (l.mode === "split") { const [f] = panelHeights(l.split); return [f + 48, 110]; }
+  if (l.mode === "crop") return [OH - 560, 230];
+  return [OH - 520, 300];
+}
+
+// ------------------------------------------------------------ layout being edited
+function current() { return target === "default" ? W.default : (W.shorts[target] || W.default); }
+function editable() {
+  if (target !== "default" && !W.shorts[target]) W.shorts[target] = clone(W.default);
+  return target === "default" ? W.default : W.shorts[target];
+}
+function setDirty(v = true) { dirty = v; const b = $("#saveBtn"); if (b) b.textContent = dirty ? "Save ●" : "Save"; }
+function shortInfo(n) { return S.shorts.find(s => String(s.n) === String(n)); }
+function range() {
+  if (target === "default") return [0, S.duration || 0];
+  const s = shortInfo(target); return [s.start, s.end];
+}
+
+// ------------------------------------------------------------ pages
+async function showList() {
+  S = null; history.replaceState(null, "", "/"); $("#hdrTitle").textContent = ""; $("#backBtn").hidden = true;
+  const items = await api("/api/projects");
+  const app = $("#app");
+  if (!items.length) { app.innerHTML = `<div class="empty">No shorts folders yet. Run the shorts tool on a video first (clips/shorts-…).</div>`; return; }
+  app.innerHTML = `<p class="hint" style="margin:0 0 12px">Pick a video. You choose which part of the frame goes where in its shorts.</p>
+    <div class="list">${items.map(p => `<div class="card" data-id="${esc(p.id)}"><h3>${esc(p.title)}</h3>
+    <div class="meta">${p.video_type ? `<span class="tag">${esc(p.video_type)}</span>` : ""}${p.edited ? `<span class="tag on">edited</span>` : ""}
+    ${p.shorts} shorts · ${p.duration ? fmt(p.duration) : "?"}</div></div>`).join("")}</div>`;
+  app.querySelectorAll(".card").forEach(c => c.onclick = () => openProject(c.dataset.id));
+}
+
+async function openProject(id) {
+  $("#app").innerHTML = `<div class="empty">Loading… (the first time, the video is analysed: about 15 seconds)</div>`;
+  S = await api(`/api/state?p=${encodeURIComponent(id)}`);
+  history.replaceState(null, "", `/?p=${encodeURIComponent(id)}`);
+  W = {video_type: S.video_type, default: clone(S.default), shorts: clone(S.shorts_layout)};
+  memo = {}; target = "default"; setDirty(false);
+  $("#hdrTitle").textContent = S.title; $("#backBtn").hidden = false;
+  buildEditor();
+  t = S.shorts.length ? Math.min(S.shorts[0].start + 1.5, S.shorts[0].end) : (S.duration || 0) * 0.1;
+  selectTarget("default", false);
+  if (S.render && S.render.running) pollRender();
+}
+
+function buildEditor() {
+  const typeOpts = Object.entries(S.types).map(([k, v]) =>
+    `<option value="${k}" ${k === W.video_type ? "selected" : ""}>${esc(v)}</option>`).join("");
+  $("#app").innerHTML = `
+  <div class="shorts" id="chips"></div>
+  <div class="grid">
+    <section class="panel">
+      <div id="banner"></div>
+      <div class="editor-wrap" id="wrap"><canvas id="editor"></canvas></div>
+      <div class="timebar">
+        <button class="btn small" data-jump="-5">−5s</button><button class="btn small" data-jump="-1">−1s</button>
+        <input type="range" id="time" step="0.1">
+        <button class="btn small" data-jump="1">+1s</button><button class="btn small" data-jump="5">+5s</button>
+        <span class="time" id="timeLabel"></span>
+      </div>
+      <div class="legend" id="legend"></div>
+      <p class="hint" id="editHint"></p>
+    </section>
+    <aside class="panel side">
+      <h2>Video type</h2>
+      <select id="vtype">${typeOpts}</select>
+      <div class="typebox" style="margin-top:6px">Detected: <b>${esc(S.detected.type)}</b>, because ${esc(S.detected.reason)}.
+        ${S.has_scene ? `<a href="/scene.jpg?p=${encodeURIComponent(S.id)}" target="_blank">See the sampled frames</a>` : ""}</div>
+      <h2>Preview</h2>
+      <div class="phone"><canvas id="preview" width="540" height="960"></canvas></div>
+      <label class="check" style="justify-content:center"><input type="checkbox" id="showText" checked> <span>Show headline and subtitle positions</span></label>
+      <h2>Layout</h2>
+      <div class="seg" id="modes">
+        <button data-mode="split"><b>Split</b><span>Webcam on top, gameplay below</span></button>
+        <button data-mode="crop"><b>Crop</b><span>One 9:16 area, e.g. a face</span></button>
+        <button data-mode="fit"><b>Fit</b><span>Whole frame on blur</span></button>
+      </div>
+      <div class="row" id="splitRow"><label for="split">Webcam panel height <b id="splitVal"></b></label>
+        <input type="range" id="split" min="25" max="55" step="1"></div>
+      <label class="check" id="trackRow"><input type="checkbox" id="track">
+        <span>Follow the face (face tracking)<small id="trackHint"></small></span></label>
+      <div class="actions">
+        <button class="btn small" id="findBtn">Find face in this frame</button>
+        <button class="btn small" id="resetBtn">Reset to suggested</button>
+        <button class="btn small" id="useDefaultBtn" hidden>Use the all-shorts layout</button>
+      </div>
+      <div class="actions">
+        <button class="btn" id="saveBtn">Save</button>
+        <button class="btn primary" id="renderBtn">Save &amp; render</button>
+      </div>
+      <div class="status" id="status"></div>
+      <pre class="log" id="log" hidden></pre>
+      <div id="player"></div>
+    </aside>
+  </div>`;
+  $("#vtype").onchange = e => {
+    W.video_type = e.target.value; setDirty();
+    const mode = S.default_mode[W.video_type] || "fit";
+    if (confirm(`Use the suggested layout for this type (${mode}) for all shorts?`)) {
+      W.default = clone(S.suggest[mode]); memo = {}; refresh();
+    }
+  };
+  $("#showText").onchange = e => { showText = e.target.checked; drawPreview(); };
+  $("#modes").querySelectorAll("button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+  $("#split").oninput = e => {
+    const l = editable(); l.split = Number(e.target.value) / 100;
+    const a = aspects(l); l.face = withAspect(l.face, a.face); l.game = withAspect(l.game, a.game);
+    setDirty(); refresh();
+  };
+  $("#track").onchange = e => {
+    const l = editable(); l.track = e.target.checked;
+    if (l.mode === "split" && l.track && !l.cam) {
+      const [x, y, w, h] = l.face; l.cam = [x, y, w, h].map(Math.round);
+    }
+    setDirty(); refresh();
+  };
+  $("#findBtn").onclick = findFace;
+  $("#resetBtn").onclick = () => {
+    const mode = current().mode;
+    if (target === "default") W.default = clone(S.suggest[mode]); else W.shorts[target] = clone(S.suggest[mode]);
+    setDirty(); refresh();
+  };
+  $("#useDefaultBtn").onclick = () => { delete W.shorts[target]; setDirty(); refresh(); };
+  $("#saveBtn").onclick = () => save().catch(e => status(e.message, "bad"));
+  $("#renderBtn").onclick = () => saveAndRender().catch(e => status(e.message, "bad"));
+  $("#time").oninput = e => { t = Number(e.target.value); loadFrame(); };
+  document.querySelectorAll("[data-jump]").forEach(b => b.onclick = () => {
+    const [a, z] = range(); t = clamp(t + Number(b.dataset.jump), a, z); loadFrame(); });
+  const ed = $("#editor");
+  ed.addEventListener("pointerdown", onDown); ed.addEventListener("pointermove", onMove);
+  ed.addEventListener("pointerup", onUp); ed.addEventListener("pointercancel", onUp);
+  window.onresize = () => drawEditor();
+}
+
+function chips() {
+  const all = [`<button class="chip ${target === "default" ? "active" : ""}" data-t="default">All shorts</button>`];
+  for (const s of S.shorts) {
+    const own = W.shorts[String(s.n)] ? `<span class="own">own layout</span>` : "";
+    all.push(`<button class="chip ${target === String(s.n) ? "active" : ""}" data-t="${s.n}" title="${esc(s.title)}">
+      ${s.n} · ${esc(s.title)} <span style="color:var(--muted)">${fmt(s.start)}</span>${own}</button>`);
+  }
+  $("#chips").innerHTML = all.join("");
+  $("#chips").querySelectorAll(".chip").forEach(c => c.onclick = () => selectTarget(c.dataset.t));
+}
+
+function selectTarget(tg, jump = true) {
+  target = String(tg);
+  const [a, z] = range();
+  if (jump && target !== "default") { const s = shortInfo(target); t = Math.min(s.start + 1.5, s.end); }
+  t = clamp(t, a, z);
+  const tr = $("#time"); tr.min = a; tr.max = z; tr.value = t;
+  found = [];
+  refresh(); loadFrame(); showPlayer();
+}
+
+function refresh() {
+  chips();
+  const l = current();
+  $("#modes").querySelectorAll("button").forEach(b => b.classList.toggle("active", b.dataset.mode === l.mode));
+  $("#splitRow").hidden = l.mode !== "split";
+  $("#trackRow").hidden = l.mode === "fit";
+  $("#findBtn").hidden = l.mode === "fit";
+  if (l.mode === "split") { $("#split").value = Math.round(l.split * 100); $("#splitVal").textContent = Math.round(l.split * 100) + "%"; }
+  $("#track").checked = !!l.track;
+  $("#trackHint").textContent = l.mode === "split"
+    ? "The webcam box moves with the face, but never leaves the dashed area."
+    : "The 9:16 crop moves with the face and jumps to the new face at a scene cut.";
+  $("#useDefaultBtn").hidden = target === "default" || !W.shorts[target];
+  const own = target !== "default" && W.shorts[target];
+  $("#banner").innerHTML = target === "default"
+    ? `<div class="banner">Editing the layout for <b>all shorts</b>. Pick a short above to give it its own layout.</div>`
+    : own ? `<div class="banner">Short ${esc(target)} has <b>its own layout</b>. Other shorts are not changed.</div>`
+          : `<div class="banner">Short ${esc(target)} uses the layout for all shorts. Any change you make here applies to this short only.</div>`;
+  $("#editHint").textContent = l.mode === "fit"
+    ? "Fit shows the whole frame, so there is nothing to place."
+    : "Drag a box to move it. Drag a corner to resize it (the shape stays right for the phone screen). Scrub the time bar to check other moments.";
+  $("#legend").innerHTML = keysFor(l).slice().reverse().map(k =>
+    `<span><i style="background:${COLORS[k]}"></i>${LABELS[k]}</span>`).join("") +
+    (found.length ? `<span><i style="background:#44d17a"></i>faces found</span>` : "");
+  $("#renderBtn").textContent = target === "default" ? "Save & render all shorts" : `Save & render short ${target}`;
+  drawEditor(); drawPreview();
+}
+
+function setMode(mode) {
+  const l = current();
+  if (l.mode === mode) return;
+  memo[target + ":" + l.mode] = clone(l);
+  const next = clone(memo[target + ":" + mode] || S.suggest[mode]);
+  if (target === "default") W.default = next; else W.shorts[target] = next;
+  setDirty(); refresh();
+}
+
+// ------------------------------------------------------------ frame
+let frameReq = 0;
+function loadFrame() {
+  $("#time").value = t;
+  const [a, z] = range();
+  $("#timeLabel").textContent = target === "default" ? `${fmt(t)} / ${fmt(z)}` : `${fmt(t)}  (short ${fmt(a)}–${fmt(z)})`;
+  const id = ++frameReq;
+  clearTimeout(loadFrame.timer);
+  loadFrame.timer = setTimeout(() => {
+    const im = new Image();
+    im.onload = () => { if (id !== frameReq) return; img = im; imgReady = true; found = []; refresh(); };
+    im.onerror = () => status("Could not read a frame at " + fmt(t), "bad");
+    im.src = `/api/frame?p=${encodeURIComponent(S.id)}&t=${t.toFixed(2)}`;
+  }, 120);
+}
+
+// ------------------------------------------------------------ drawing
+function edScale() { return $("#editor").clientWidth / FW(); }
+
+function drawEditor() {
+  const c = $("#editor"); if (!c || !S) return;
+  const cssW = $("#wrap").clientWidth, cssH = cssW * FH() / FW();
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(cssW * dpr); c.height = Math.round(cssH * dpr); c.style.height = cssH + "px";
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, cssW, cssH);
+  if (imgReady) ctx.drawImage(img, 0, 0, cssW, cssH);
+  const l = current(), k = cssW / FW();
+  const keys = keysFor(l).filter(key => l[key]);
+  if (keys.length) {   // darken what will not be shown
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, cssW, cssH);
+    for (const key of keys) if (key !== "cam") { const [x, y, w, h] = l[key]; ctx.rect(x * k, y * k, w * k, h * k); }
+    ctx.fillStyle = "rgba(0,0,0,0.55)"; ctx.fill("evenodd"); ctx.restore();
+  }
+  for (const f of found) {
+    ctx.strokeStyle = "#44d17a"; ctx.lineWidth = 1.5; ctx.strokeRect(f[0] * k, f[1] * k, f[2] * k, f[3] * k);
+  }
+  for (const key of keys) {
+    const [x, y, w, h] = l[key].map(v => v * k);
+    ctx.save();
+    ctx.strokeStyle = COLORS[key]; ctx.lineWidth = key === "cam" ? 1.5 : 2.5;
+    if (key === "cam") ctx.setLineDash([7, 5]);
+    ctx.strokeRect(x, y, w, h); ctx.setLineDash([]);
+    ctx.font = "600 12px system-ui, sans-serif";
+    const label = LABELS[key], tw = ctx.measureText(label).width + 10;
+    const ly = y > 20 ? y - 20 : y + 2;
+    ctx.fillStyle = COLORS[key]; ctx.fillRect(x, ly, tw, 18);
+    ctx.fillStyle = "#111"; ctx.fillText(label, x + 5, ly + 13);
+    for (const [hx, hy] of [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]) {
+      ctx.fillStyle = COLORS[key]; ctx.fillRect(hx - 5, hy - 5, 10, 10);
+      ctx.strokeStyle = "#111"; ctx.lineWidth = 1; ctx.strokeRect(hx - 5, hy - 5, 10, 10);
+    }
+    ctx.restore();
+  }
+}
+
+function wrapLines(ctx, text, maxW) {
+  const words = text.split(/\s+/).filter(Boolean), lines = []; let line = "";
+  for (const w of words) { const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; }
+  if (line) lines.push(line); return lines;
+}
+
+function drawPreview() {
+  const c = $("#preview"); if (!c || !S) return;
+  const ctx = c.getContext("2d"), s = c.width / OW, l = current();
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, c.width, c.height);
+  if (!imgReady) return;
+  const ki = img.naturalWidth / FW();
+  const blit = (b, dx, dy, dw, dh) => ctx.drawImage(img, b[0] * ki, b[1] * ki, b[2] * ki, b[3] * ki, dx, dy, dw, dh);
+  if (l.mode === "split") {
+    const [fh, gh] = panelHeights(l.split);
+    blit(l.face, 0, 0, OW * s, fh * s); blit(l.game, 0, fh * s, OW * s, gh * s);
+  } else if (l.mode === "crop") {
+    blit(l.box, 0, 0, c.width, c.height);
+  } else {
+    const cover = Math.max(c.width / img.naturalWidth, c.height / img.naturalHeight);
+    ctx.save(); ctx.filter = "blur(10px) brightness(0.75)";
+    const bw = img.naturalWidth * cover, bh = img.naturalHeight * cover;
+    ctx.drawImage(img, (c.width - bw) / 2, (c.height - bh) / 2, bw, bh); ctx.restore();
+    const h = c.width * FH() / FW(); ctx.drawImage(img, 0, (c.height - h) / 2, c.width, h);
+  }
+  if (!showText) return;
+  const [subBottom, hookTop] = margins(l);
+  const info = target === "default" ? S.shorts[0] : shortInfo(target);
+  const hook = ((info && info.hook_text) || "Your headline here").replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu, "").trim().toUpperCase();
+  ctx.font = `900 ${68 * s}px "Arial Black", Arial, sans-serif`; ctx.textBaseline = "top"; ctx.textAlign = "center";
+  const lines = wrapLines(ctx, hook, (OW - 180) * s);
+  let y = hookTop * s; const lh = 80 * s;
+  for (const line of lines) {
+    const tw = ctx.measureText(line).width;
+    ctx.fillStyle = "#ffe500"; ctx.fillRect(c.width / 2 - tw / 2 - 16 * s, y - 10 * s, tw + 32 * s, lh);
+    ctx.fillStyle = "#000"; ctx.fillText(line, c.width / 2, y); y += lh;
+  }
+  ctx.font = `900 ${78 * s}px "Arial Black", Arial, sans-serif`; ctx.textBaseline = "bottom";
+  ctx.lineWidth = 14 * s; ctx.strokeStyle = "#000"; ctx.lineJoin = "round";
+  const sub = "subtitles here";
+  ctx.strokeText(sub, c.width / 2, subBottom * s); ctx.fillStyle = "#fff"; ctx.fillText(sub, c.width / 2, subBottom * s);
+  ctx.textAlign = "start"; ctx.textBaseline = "alphabetic";
+}
+
+// ------------------------------------------------------------ dragging boxes
+function toSrc(e) { const r = $("#editor").getBoundingClientRect(), k = r.width / FW();
+  return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
+
+function hit(p) {
+  const l = current(), keys = keysFor(l).filter(k => l[k]), tol = 9 / edScale();
+  const order = ["face", "box", "cam", "game"].filter(k => keys.includes(k));
+  for (const key of order) {
+    const [x, y, w, h] = l[key];
+    const corners = {nw: [x, y], ne: [x + w, y], sw: [x, y + h], se: [x + w, y + h]};
+    for (const [name, [cx, cy]] of Object.entries(corners))
+      if (Math.abs(p[0] - cx) <= tol && Math.abs(p[1] - cy) <= tol) return {key, kind: name};
+  }
+  for (const key of order) {
+    const [x, y, w, h] = l[key];
+    if (p[0] >= x && p[0] <= x + w && p[1] >= y && p[1] <= y + h) return {key, kind: "move"};
+  }
+  return null;
+}
+
+function onDown(e) {
+  if (!S) return;
+  const p = toSrc(e), h = hit(p);
+  if (!h) return;
+  drag = {...h, start: p, orig: current()[h.key].slice(), moved: false};
+  $("#editor").setPointerCapture(e.pointerId);
+  e.preventDefault();
+}
+
+function onMove(e) {
+  const p = toSrc(e);
+  if (!drag) {
+    const h = hit(p);
+    $("#editor").style.cursor = !h ? "crosshair" : h.kind === "move" ? "move" :
+      (h.kind === "nw" || h.kind === "se") ? "nwse-resize" : "nesw-resize";
+    return;
+  }
+  if (!drag.moved && Math.hypot(p[0] - drag.start[0], p[1] - drag.start[1]) * edScale() < 3) return;
+  drag.moved = true;
+  const l = editable(), a = aspects(l)[drag.key], [ox, oy, ow, oh] = drag.orig;
+  let box;
+  if (drag.kind === "move") {
+    const dx = p[0] - drag.start[0], dy = p[1] - drag.start[1];
+    box = [clamp(ox + dx, 0, FW() - ow), clamp(oy + dy, 0, FH() - oh), ow, oh];
+  } else {
+    const right = drag.kind.includes("e"), bottom = drag.kind.includes("s");
+    const ax = right ? ox : ox + ow, ay = bottom ? oy : oy + oh;      // the corner that stays put
+    const maxW = right ? FW() - ax : ax, maxH = bottom ? FH() - ay : ay;
+    let w = Math.abs(p[0] - ax), h = Math.abs(p[1] - ay);
+    if (a) {
+      w = Math.max(w, h * a); w = Math.min(w, maxW, maxH * a); w = Math.max(w, 40); h = w / a;
+    } else {
+      w = clamp(w, 30, maxW); h = clamp(h, 30, maxH);
+    }
+    box = [right ? ax : ax - w, bottom ? ay : ay - h, w, h];
+  }
+  l[drag.key] = box.map(v => Math.round(v));
+  setDirty(); drawEditor(); drawPreview();
+}
+
+function onUp(e) {
+  if (!drag) return;
+  if (drag.moved) {
+    const l = editable(), a = aspects(l)[drag.key];
+    if (a) l[drag.key] = withAspect(l[drag.key], a);
+  }
+  drag = null; refresh();
+}
+
+// ------------------------------------------------------------ actions
+async function findFace() {
+  status("Looking for faces…");
+  const r = await api(`/api/faces?p=${encodeURIComponent(S.id)}&t=${t.toFixed(2)}`);
+  found = r.faces;
+  if (!found.length) { status("No face found in this frame. Try another moment.", "bad"); refresh(); return; }
+  const l = editable(), key = l.mode === "split" ? "face" : "box", b = l[key];
+  const bc = [b[0] + b[2] / 2, b[1] + b[3] / 2];
+  const f = found.slice().sort((p, q) => (Math.hypot(p[0] + p[2] / 2 - bc[0], p[1] + p[3] / 2 - bc[1]) / p[2]) -
+                                         (Math.hypot(q[0] + q[2] / 2 - bc[0], q[1] + q[3] / 2 - bc[1]) / q[2]))[0];
+  const fx = f[0] + f[2] / 2, fy = f[1] + f[3] / 2;
+  const [, , w, h] = b;
+  const place = [clamp(fx - w / 2, 0, FW() - w), clamp(fy - (key === "box" ? 0.38 : 0.45) * h, 0, FH() - h), w, h];
+  if (l.mode === "split" && l.cam) {           // stay inside the webcam area when it holds the face
+    const [cx, cy, cw, ch] = l.cam;
+    if (fx > cx && fx < cx + cw && fy > cy && fy < cy + ch) {
+      place[0] = clamp(place[0], cx, cx + cw - w); place[1] = clamp(place[1], cy, cy + ch - h);
+    }
+  }
+  l[key] = place.map(Math.round);
+  status(`Found ${found.length} face${found.length > 1 ? "s" : ""}; the box is centred on the nearest one.`, "ok");
+  setDirty(); refresh();
+}
+
+function status(msg, kind = "") { const el = $("#status"); if (!el) return; el.textContent = msg; el.className = "status " + kind; }
+
+async function save() {
+  const body = {video_type: W.video_type, default: W.default, shorts: W.shorts};
+  S = await api(`/api/save?p=${encodeURIComponent(S.id)}`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body)});
+  W = {video_type: S.video_type, default: clone(S.default), shorts: clone(S.shorts_layout)};
+  setDirty(false); refresh(); status("Saved to layout.json.", "ok");
+}
+
+async function saveAndRender() {
+  await save();
+  const only = target === "default" ? [] : [Number(target)];
+  const r = await api(`/api/render?p=${encodeURIComponent(S.id)}`, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({only})});
+  if (!r.started) { status(r.error || "Could not start.", "bad"); return; }
+  status(only.length ? `Rendering short ${only[0]}…` : "Rendering all shorts…");
+  pollRender();
+}
+
+function pollRender() {
+  clearTimeout(pollTimer);
+  const tick = async () => {
+    let r;
+    try { r = await api(`/api/render?p=${encodeURIComponent(S.id)}`); } catch (e) { status(e.message, "bad"); return; }
+    const log = $("#log");
+    if (log && r.log) { log.hidden = false; log.textContent = r.log.join("\n"); log.scrollTop = log.scrollHeight; }
+    $("#renderBtn").disabled = !!r.running;
+    if (r.running) { pollTimer = setTimeout(tick, 1500); return; }
+    if (r.exit === 0) {
+      status("Done. The new short is below.", "ok");
+      const fresh = await api(`/api/state?p=${encodeURIComponent(S.id)}`); S.shorts = fresh.shorts; showPlayer();
+    } else if (r.exit === 2 && r.needs_claude) {
+      status("The shorts tool needs a file from Claude Code first: " + r.needs_claude, "bad");
+    } else if (r.exit != null) status("Render failed; see the log above.", "bad");
+  };
+  tick();
+}
+
+function showPlayer() {
+  const el = $("#player"); if (!el) return;
+  const s = target === "default" ? null : shortInfo(target);
+  if (s && s.file) {
+    el.innerHTML = `<h2>Rendered short ${s.n}</h2><video controls preload="metadata"
+      src="/video?p=${encodeURIComponent(S.id)}&f=${encodeURIComponent(s.file)}&v=${s.mtime || 0}"></video>`;
+  } else if (target === "default") {
+    const done = S.shorts.filter(x => x.file).length;
+    el.innerHTML = done ? `<p class="hint">${done} of ${S.shorts.length} shorts are rendered. Pick one above to watch it.</p>` : "";
+  } else el.innerHTML = `<p class="hint">Short ${s ? s.n : ""} is not rendered yet.</p>`;
+}
+
+window.addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+$("#backBtn").onclick = () => { if (!dirty || confirm("Leave without saving?")) { setDirty(false); showList(); } };
+document.addEventListener("keydown", e => {
+  if (!S || e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    const [a, z] = range(); t = clamp(t + (e.key === "ArrowLeft" ? -1 : 1) * (e.shiftKey ? 5 : 1), a, z); loadFrame();
+  }
+});
+
+const start = new URLSearchParams(location.search).get("p");
+(start ? openProject(start) : showList()).catch(e => { $("#app").innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>
